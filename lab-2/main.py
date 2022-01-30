@@ -1,6 +1,8 @@
-"""Adds two numbers provided by the user.
+"""Calculates position of an object in 3D space given two (x, y) coordinates.
 
-A PyQt4 application that accepts two numbers and calculates their sum.
+A PyQt4 application that accepts two (x, y) coordinate pairs of a centroid from
+a perspective of a binocular vision setup and determines the position of the
+centroid in 3D space.
 """
 
 __version__ = '1.0.0'
