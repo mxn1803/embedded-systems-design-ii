@@ -101,7 +101,6 @@ class AdderWidget(QWidget):
         )
         return ql
 
-
 def main():
     app = QApplication(sys.argv)
     adderWidget = AdderWidget()
