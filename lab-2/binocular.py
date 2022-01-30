@@ -188,7 +188,7 @@ class Binocular:
         return self.__baseline * self.__focal_length / d
 
 def main():
-    binoculars = Binoculars()
+    binoculars = Binocular()
     binoculars.prompt()
 
 if __name__ == '__main__':
