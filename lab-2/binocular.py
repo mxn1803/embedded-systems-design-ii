@@ -92,6 +92,14 @@ class Binocular:
         if err:
             return (None, None, None, None), err
 
+        if left == right:
+            return (
+                None,
+                None,
+                None,
+                None
+            ), '*** Error: Equivalent centroids cause division by zero! ***'
+
         return (
             self.__x_position(left, right),
             self.__y_position(left, right),
@@ -107,13 +115,13 @@ class Binocular:
         right = raw_input('Please enter the centroid as perceived'
                          ' by the right camera in "X Y" form: ')
 
-        left, right, err = self.__sanitize_input_format(left, right)
+        left, right, input_err = self.__sanitize_input_format(left, right)
+        (x, y, z, d), div_err = self.position(left, right)
+        err = input_err or div_err or None
 
         if err:
             print('\n{}\n'.format(err))
             return
-
-        (x, y, z, d), err = self.position(left, right)
 
         print('\nX         : {:5.0f} mm\n'
               'Y         : {:5.0f} mm\n'

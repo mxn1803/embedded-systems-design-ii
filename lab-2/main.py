@@ -35,17 +35,70 @@ class BinocularWidget(QWidget):
     def __init__(self):
         super(BinocularWidget, self).__init__()
 
-        # instantiate adder
-        # self.adder = Adder()
+        # instantiate binocular
+        self.__binocular = Binocular()
 
         self.__build_ui()
 
-    def __handle_submit(self):
-        pass
-        # a = self.a_input.text()
-        # b = self.b_input.text()
-        # result = self.adder.add(a, b)
-        # self.output.setText(str(result))
+    def __handle_submit(self, scalar=1.0):
+        x1, y1 = str(self.__x1_input.text()), str(self.__y1_input.text())
+        x2, y2 = str(self.__x2_input.text()), str(self.__y2_input.text())
+        (x, y, z, d), err = self.__binocular.position((x1, y1), (x2, y2))
+        # print (x1, y1), (x2, y2), ' | ', (x, y, z, d), err
+        
+        if err:
+            self.__error_output.setText(str(err))
+            self.__x_output.setText('ERR')
+            self.__y_output.setText('ERR')
+            self.__z_output.setText('ERR')
+            self.__d_output.setText('ERR')
+        elif (x1, y1) == (x2, y2):
+            self.__error_output.setText(str(err))
+            self.__x_output.setText('INF')
+            self.__y_output.setText('INF')
+            self.__z_output.setText('INF')
+            self.__d_output.setText('0.0')
+        else:
+            coord_fmt_str = '{:.3f}' if scalar < 1.0 else '{:.0f}'
+            d_fmt_str = '{:.3f}' if scalar < 1.0 else '{:.1f}'
+            self.__error_output.setText('Nothing to report.')
+            self.__x_output.setText(coord_fmt_str.format(x * scalar))
+            self.__y_output.setText(coord_fmt_str.format(y * scalar))
+            self.__z_output.setText(coord_fmt_str.format(z * scalar))
+            self.__d_output.setText(d_fmt_str.format(d * scalar))
+
+    def __handle_unit_change(self):
+        print self.__x_output_label.text(), self.__y_output_label.text(), self.__z_output_label.text(), self.__d_output_label.text()
+        if self.__m_unit_option.isChecked():
+            self.__handle_submit(0.001)
+            self.__x_output_label.setText('m')
+            self.__y_output_label.setText('m')
+            self.__z_output_label.setText('m')
+            self.__d_output_label.setText('m')
+        elif self.__cm_unit_option.isChecked():
+            self.__handle_submit(0.1)
+            self.__x_output_label.setText('cm')
+            self.__y_output_label.setText('cm')
+            self.__z_output_label.setText('cm')
+            self.__d_output_label.setText('cm')
+        elif self.__mm_unit_option.isChecked():
+            self.__handle_submit(1.0)
+            self.__x_output_label.setText('mm')
+            self.__y_output_label.setText('mm')
+            self.__z_output_label.setText('mm')
+            self.__d_output_label.setText('mm')
+        elif self.__ft_unit_option.isChecked():
+            self.__handle_submit(0.00328084)
+            self.__x_output_label.setText('ft')
+            self.__y_output_label.setText('ft')
+            self.__z_output_label.setText('ft')
+            self.__d_output_label.setText('ft')
+        elif self.__in_unit_option.isChecked():
+            self.__handle_submit(0.393701)
+            self.__x_output_label.setText('in')
+            self.__y_output_label.setText('in')
+            self.__z_output_label.setText('in')
+            self.__d_output_label.setText('in')
 
     def __build_ui(self):
         self.__decorate()
@@ -61,6 +114,17 @@ class BinocularWidget(QWidget):
         self.__y_output = self.__q_line_edit('0', False)
         self.__z_output = self.__q_line_edit('300', False)
         self.__d_output = self.__q_line_edit('1.2', False)
+        self.__error_output = self.__q_line_edit(
+            'Hello, there!',
+            False,
+            Qt.AlignLeft
+        )
+
+        # labels
+        self.__x_output_label = self.__q_label('mm')
+        self.__y_output_label = self.__q_label('mm')
+        self.__z_output_label = self.__q_label('mm')
+        self.__d_output_label = self.__q_label('mm')
 
         # submission
         self.__locate_btn = self.__q_push_button('Locate')
@@ -77,10 +141,11 @@ class BinocularWidget(QWidget):
             (self.__x1_input, self.__y1_input),
             (self.__x2_input, self.__y2_input),
             self.__locate_btn,
-            self.__x_output,
-            self.__y_output,
-            self.__z_output,
-            self.__d_output,
+            (self.__x_output, self.__x_output_label),
+            (self.__y_output, self.__y_output_label),
+            (self.__z_output, self.__z_output_label),
+            (self.__d_output, self.__d_output_label),
+            self.__error_output,
             (
                 self.__m_unit_option,
                 self.__cm_unit_option,
@@ -92,6 +157,21 @@ class BinocularWidget(QWidget):
 
         # actions
         self.__locate_btn.clicked.connect(lambda: self.__handle_submit())
+        self.__m_unit_option.clicked.connect(
+            lambda: self.__handle_unit_change()
+        )
+        self.__cm_unit_option.clicked.connect(
+            lambda: self.__handle_unit_change()
+        )
+        self.__mm_unit_option.clicked.connect(
+            lambda: self.__handle_unit_change()
+        )
+        self.__ft_unit_option.clicked.connect(
+            lambda: self.__handle_unit_change()
+        )
+        self.__in_unit_option.clicked.connect(
+            lambda: self.__handle_unit_change()
+        )
 
         quit_sc = QShortcut(QKeySequence('Ctrl+Q'), self)
         quit_sc.activated.connect(QApplication.instance().quit)
@@ -102,21 +182,19 @@ class BinocularWidget(QWidget):
     # window manipulation
     def __decorate(self):
         self.setWindowTitle("Binocular - A Computer's Window to the World")
-        self.setFixedSize(1360, 800)
+        # self.setFixedSize(1360, 800)
         self.move(640, 480)
 
     # components
-    def __q_line_edit(self, text, editable=True):
+    def __q_line_edit(self, text, editable=True, alignment=Qt.AlignRight):
         qle = QLineEdit(text)
         qle.setTextMargins(8, 8, 8, 8)
-        qle.setAlignment(Qt.AlignRight)
+        qle.setAlignment(alignment)
         qle.setReadOnly(not editable)
-        # qle.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         return qle
 
     def __q_push_button(self, text):
         qpb = QPushButton(text)
-        # qpb.setStyleSheet('background-color: #8fd485; padding: 1em;')
         qpb.setStyleSheet('QPushButton {'
                           '    border: none;'
                           '    background-color: #8fd485;'
@@ -213,18 +291,20 @@ class BinocularWidget(QWidget):
         line_edit_label_layout.addWidget(self.__q_label('Z:'))
         line_edit_label_layout.addWidget(self.__q_label('Disparity:'))
 
+        print xqle[1].text()
+
         line_edit_layout = QVBoxLayout()
         line_edit_layout.addLayout(
-            self.__line_edit_with_units_layout(xqle, 'mm')
+            self.__line_edit_with_units_layout(xqle[0], xqle[1].text())
         )
         line_edit_layout.addLayout(
-            self.__line_edit_with_units_layout(yqle, 'mm')
+            self.__line_edit_with_units_layout(yqle[0], yqle[1].text())
         )
         line_edit_layout.addLayout(
-            self.__line_edit_with_units_layout(zqle, 'mm')
+            self.__line_edit_with_units_layout(zqle[0], zqle[1].text())
         )
         line_edit_layout.addLayout(
-            self.__line_edit_with_units_layout(dqle, 'mm')
+            self.__line_edit_with_units_layout(dqle[0], dqle[1].text())
         )
 
         layout = QGridLayout()
@@ -251,11 +331,12 @@ class BinocularWidget(QWidget):
             ' on the fly using the radio buttons.', True))
         return layout
 
-    def __lhs_layout(self, left_pair, right_pair, locate_btn):
+    def __lhs_layout(self, left_pair, right_pair, locate_btn, eqle):
         layout = QVBoxLayout()
         layout.addLayout(self.__input_layout(left_pair, right_pair))
         layout.addLayout(self.__submit_button_layout(locate_btn))
-        layout.addLayout(self.__instructions_layout())
+        # layout.addLayout(self.__instructions_layout())
+        layout.addWidget(eqle)
         layout.setAlignment(Qt.AlignTop)
         layout.setContentsMargins(0, 0, 16, 0)
         return layout
@@ -263,7 +344,8 @@ class BinocularWidget(QWidget):
     def __rhs_layout(self, xqle, yqle, zqle, dqle, qrbs):
         layout = QVBoxLayout()
         layout.addLayout(self.__output_layout(xqle, yqle, zqle, dqle))
-        layout.addLayout(self.__unit_options_layout(*qrbs))
+        # layout.addLayout(self.__unit_options_layout(*qrbs))
+        layout.setAlignment(Qt.AlignTop)
         layout.setContentsMargins(16, 0, 0, 0)
         return layout
 
@@ -276,10 +358,13 @@ class BinocularWidget(QWidget):
         yqle,
         zqle,
         dqle,
+        eqle,
         qrbs
     ):
         layout = QHBoxLayout()
-        layout.addLayout(self.__lhs_layout(left_pair, right_pair, locate_btn))
+        layout.addLayout(
+            self.__lhs_layout(left_pair, right_pair, locate_btn, eqle)
+        )
         layout.addLayout(self.__rhs_layout(xqle, yqle, zqle, dqle, qrbs))
         layout.setContentsMargins(64, 64, 64, 64)
         layout.setSpacing(32)
