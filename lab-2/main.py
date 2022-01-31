@@ -68,7 +68,7 @@ class BinocularWidget(QWidget):
             self.__d_output.setText(d_fmt_str.format(d * scalar))
 
     def __handle_unit_change(self):
-        print self.__x_output_label.text(), self.__y_output_label.text(), self.__z_output_label.text(), self.__d_output_label.text()
+        # print self.__x_output_label.text(), self.__y_output_label.text(), self.__z_output_label.text(), self.__d_output_label.text()
         if self.__m_unit_option.isChecked():
             self.__handle_submit(0.001)
             self.__x_output_label.setText('m')
@@ -291,7 +291,7 @@ class BinocularWidget(QWidget):
         line_edit_label_layout.addWidget(self.__q_label('Z:'))
         line_edit_label_layout.addWidget(self.__q_label('Disparity:'))
 
-        print xqle[1].text()
+        # print xqle[1].text()
 
         line_edit_layout = QVBoxLayout()
         line_edit_layout.addLayout(
