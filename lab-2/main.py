@@ -100,6 +100,11 @@ class BinocularWidget(QWidget):
             self.__z_output_label.setText('in')
             self.__d_output_label.setText('in')
 
+        self.__x_output_label.update()
+        self.__y_output_label.update()
+        self.__z_output_label.update()
+        self.__d_output_label.update()
+
     def __build_ui(self):
         self.__decorate()
 
