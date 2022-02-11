@@ -132,7 +132,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-                # ext = v[-4:].uppercase()
-                # if ext != '.JPG' or ext != '.JPEG':
-                #     return None, '*** Error: Not a JPG file! ***'
+    
