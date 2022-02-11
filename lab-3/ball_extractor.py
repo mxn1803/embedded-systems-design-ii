@@ -8,6 +8,7 @@ __author__ = 'Mike Nystoriak'
 __credits__ = ['Mike Nystoriak']
 
 import sys
+import os
 import cv2
 
 class BallExtractor:
@@ -15,13 +16,57 @@ class BallExtractor:
 
     def __init__(self):
         config, err = self.__parse_args(sys.argv[1:])
+        if err: return self.__handle_err(err)
+        self.__config = config
 
-        if err:
-            print('\n{}\n\n{}\n').format(err, self.__usage())
+        paths, err = self.__build_paths()
+        if err: return self.__handle_err(err)
+        self.__paths = paths
+
+        print paths
 
     def extract(self):
         """Runs extraction procedure."""
         print('I am extracting the ball...')
+
+    def __build_paths(self):
+        file = self.__config['file']
+        if file: return self.__check_file_path(file)
+
+        directory = self.__config['directory']
+        return self.__check_directory_path(directory)
+
+    def __check_extension(self, path):
+        _, ext = os.path.splitext(path)
+        ext = ext.upper()
+        return ext == '.JPG' or ext == '.JPEG'
+
+    def __check_file_path(self, file):
+        err = None
+        token = './{}' if file[0] != '/' else '{}'
+        file = token.format(file)
+        if not os.path.isfile(file):
+            err = '*** Error: `{}` does not exist! ***'.format(file)
+        if not self.__check_extension(file):
+            err = '*** Error: `{}` is not a JPG file! ***'.format(file)
+
+        if err: return [], err
+        return [file], err
+
+    def __check_directory_path(self, directory):
+        err = None
+        if not os.path.isdir(directory):
+            token = './{}/' if directory[0] != '/' else '{}/'
+            directory = token.format(directory)
+            err = '*** Error: `{}` does not exist! ***'.format(directory)
+
+        if err: return [], err
+
+        jpgs = []
+        for file in os.listdir(directory):
+            if self.__check_extension(os.path.join(directory, file)):
+                jpgs.append(os.path.join(directory, file))
+        return jpgs, err
 
     def __parse_args(self, args):
         if len(args) % 2 != 0 or len(args) > 4:
@@ -44,10 +89,13 @@ class BallExtractor:
                     '*** Error: Invalid argument `{}`! ***'.format(flag)
                 )
 
-        return config
+        return config, None
 
     def __default_config(self):
         return {'file': '','directory': '.'}
+
+    def __handle_err(self, err):
+        print('\n{}\n\n{}\n').format(err, self.__usage())
 
     def __usage(self):
         return ('Usage: python ball_extractor.py [options]'
@@ -55,8 +103,8 @@ class BallExtractor:
                 '\n    options: -f, --file         The path to a single image'
                 '\n                                file (JPG format only).'
                 '\n                                If the `-d` flag is also'
-                '\n                                provided, this option is'
-                '\n                                ignored. Processing will'
+                '\n                                provided, this option takes'
+                '\n                                precedent. Processing will'
                 '\n                                only be performed on this'
                 '\n                                file.'
                 '\n'
