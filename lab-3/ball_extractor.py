@@ -69,15 +69,33 @@ class BallExtractor:
         return jpgs, err
 
     def __parse_args(self, args):
-        if len(args) % 2 != 0 or len(args) > 4:
-            return None, '*** Error: Invalid number of arguments! ***'
+        # see if `-h` or `--help` was invoked first
+        for arg in args:
+            if arg == '-h' or arg == '--help':
+                print('\n{}\n'.format(self.__usage()))
+                exit(0)
 
+        # extract configuration
+        flags = []
+        values = []
+        for i in range(len(args)):
+            if i % 2 == 0:
+                flags.append(args[i])
+            else:
+                values.append(args[i])
+
+        # should have one key per one value
+        if len(flags) != len(values):
+            return (
+                None,
+                '*** Error: Invalid number of arguments! ***'
+            )
         arg_dict = {}
-        for i in range(0, len(args), 2):
-            arg_dict[args[i]] = args[i + 1]
+        for i in range(len(flags)):
+            arg_dict[flags[i]] = values[i]
 
+        # override defaults
         config = self.__default_config()
-
         for flag, value in arg_dict.iteritems():
             if flag == '-f' or flag == '--file':
                 config['file'] = value
@@ -132,4 +150,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
