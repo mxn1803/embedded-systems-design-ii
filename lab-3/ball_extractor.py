@@ -14,8 +14,10 @@ class BallExtractor:
     """Identifies and extracts a white ping-pong ball from an image."""
 
     def __init__(self):
-        self.config = self.__parse_args(sys.argv[1:])
-        print self.config
+        config, err = self.__parse_args(sys.argv[1:])
+
+        if err:
+            print('\n{}\n\n{}\n').format(err, self.__usage())
 
     def extract(self):
         """Runs extraction procedure."""
@@ -31,13 +33,16 @@ class BallExtractor:
 
         config = self.__default_config()
 
-        for k, v in arg_dict.iteritems():
-            if k == '-f' or k == '--file':
-                config['file'] = v
-            elif k == '-d' or k == '--directory':
-                config['directory'] = v
+        for flag, value in arg_dict.iteritems():
+            if flag == '-f' or flag == '--file':
+                config['file'] = value
+            elif flag == '-d' or flag == '--directory':
+                config['directory'] = value
             else:
-                return None, '*** Error: Invalid argument `{}`! ***'.format(k)
+                return (
+                    None,
+                    '*** Error: Invalid argument `{}`! ***'.format(flag)
+                )
 
         return config
 
@@ -45,7 +50,7 @@ class BallExtractor:
         return {'file': '','directory': '.'}
 
     def __usage(self):
-        return ('\nUsage: python ball_extractor.py [options]'
+        return ('Usage: python ball_extractor.py [options]'
                 '\n'
                 '\n    options: -f, --file         The path to a single image'
                 '\n                                file (JPG format only).'
@@ -61,8 +66,7 @@ class BallExtractor:
                 '\n                                over the `-i` flag.'
                 '\n                                Processing will be done on'
                 '\n                                all valid images in this'
-                '\n                                directory. Default is `.`.'
-                '\n')
+                '\n                                directory. Default is `.`.')
 
 def main():
     ball_extractor = BallExtractor()
