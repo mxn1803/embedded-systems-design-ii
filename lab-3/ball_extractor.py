@@ -23,7 +23,6 @@ class BallExtractor:
         paths, err = self.__build_paths()
         if err: return self.__handle_err(err)
         self.__paths = paths
-        # print self.__paths
 
     def extract(self):
         """Runs extraction procedure."""
@@ -33,10 +32,11 @@ class BallExtractor:
         for path in self.__paths:
             img = cv2.imread(path)
             raws.append(img)
+        self.__extraction_algorithm(raws)
 
-        # perform and store extraction
+    def __extraction_algorithm(self, raws):
         for raw in raws:
-            blur = cv2.GaussianBlur(raw, (7, 7), 0)
+            blur = cv2.GaussianBlur(raw, (11, 11), 0)
             ycrcb = cv2.cvtColor(blur, cv2.COLOR_BGR2YCrCb)
 
             low = np.array([60, 0, 0])
@@ -48,24 +48,26 @@ class BallExtractor:
             masked = cv2.cvtColor(masked, cv2.COLOR_RGB2GRAY)
 
             circles = cv2.HoughCircles(
-                masked,
-                cv2.HOUGH_GRADIENT,
-                1,
-                180,
-                param1=50,
+                image=masked,
+                method=cv2.HOUGH_GRADIENT,
+                dp=1,
+                minDist=120,
+                param1=60,
                 param2=30,
-                minRadius=40,
-                maxRadius=150
+                minRadius=30,
+                maxRadius=180
             )
             if circles is not None:
                 circles = np.uint16(np.around(circles))
                 for i in circles[0,:]:
                     cv2.circle(raw, (i[0], i[1]), i[2], (0, 255, 0), 2)
                     cv2.circle(raw, (i[0], i[1]), 2, (0, 0, 255), 3)
+                    cv2.circle(mask, (i[0], i[1]), i[2], (0, 255, 0), 2)
+                    cv2.circle(mask, (i[0], i[1]), 2, (0, 0, 255), 3)
 
             cv2.imshow('Results', raw)
+            cv2.imshow('Mask', mask)
             cv2.waitKey(0)
-
         cv2.destroyAllWindows()
 
     def __build_paths(self):
