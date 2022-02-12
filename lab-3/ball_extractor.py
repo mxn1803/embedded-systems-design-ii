@@ -11,7 +11,6 @@ import sys
 import os
 import cv2
 import numpy as np
-# import matplotlib.pyplot as plt
 
 class BallExtractor:
     """Identifies and extracts a white ping-pong ball from an image."""
@@ -24,23 +23,50 @@ class BallExtractor:
         paths, err = self.__build_paths()
         if err: return self.__handle_err(err)
         self.__paths = paths
-
-        print(paths)
+        # print self.__paths
 
     def extract(self):
         """Runs extraction procedure."""
-        print('I am extracting the ball...')
+
+        # load raw images from each path
         raws = []
         for path in self.__paths:
             img = cv2.imread(path)
             raws.append(img)
 
-        for r in raws:
-            cv2.imshow('Title', r)
-            cv2.waitKey(0)
-            
-        cv2.destroyAllWindows()
+        # perform and store extraction
+        for raw in raws:
+            blur = cv2.GaussianBlur(raw, (7, 7), 0)
+            ycrcb = cv2.cvtColor(blur, cv2.COLOR_BGR2YCrCb)
 
+            low = np.array([60, 0, 0])
+            high = np.array([255, 144, 129])
+
+            mask = cv2.inRange(ycrcb, low, high)
+            masked = cv2.bitwise_and(raw, raw, mask=mask)
+            masked = cv2.cvtColor(masked, cv2.COLOR_YCrCb2RGB)
+            masked = cv2.cvtColor(masked, cv2.COLOR_RGB2GRAY)
+
+            circles = cv2.HoughCircles(
+                masked,
+                cv2.HOUGH_GRADIENT,
+                1,
+                180,
+                param1=50,
+                param2=30,
+                minRadius=40,
+                maxRadius=150
+            )
+            if circles is not None:
+                circles = np.uint16(np.around(circles))
+                for i in circles[0,:]:
+                    cv2.circle(raw, (i[0], i[1]), i[2], (0, 255, 0), 2)
+                    cv2.circle(raw, (i[0], i[1]), 2, (0, 0, 255), 3)
+
+            cv2.imshow('Results', raw)
+            cv2.waitKey(0)
+
+        cv2.destroyAllWindows()
 
     def __build_paths(self):
         file = self.__config['file']
@@ -79,6 +105,7 @@ class BallExtractor:
         for file in os.listdir(directory):
             if self.__check_extension(os.path.join(directory, file)):
                 jpgs.append(os.path.join(directory, file))
+        jpgs.sort()
         return jpgs, err
 
     def __parse_args(self, args):
@@ -109,7 +136,7 @@ class BallExtractor:
 
         # override defaults
         config = self.__default_config()
-        for flag, value in arg_dict.items():
+        for flag, value in arg_dict.iteritems():
             if flag == '-f' or flag == '--file':
                 config['file'] = value
             elif flag == '-d' or flag == '--directory':
