@@ -10,6 +10,8 @@ __credits__ = ['Mike Nystoriak']
 import sys
 import os
 import cv2
+import numpy as np
+# import matplotlib.pyplot as plt
 
 class BallExtractor:
     """Identifies and extracts a white ping-pong ball from an image."""
@@ -23,11 +25,22 @@ class BallExtractor:
         if err: return self.__handle_err(err)
         self.__paths = paths
 
-        print paths
+        print(paths)
 
     def extract(self):
         """Runs extraction procedure."""
         print('I am extracting the ball...')
+        raws = []
+        for path in self.__paths:
+            img = cv2.imread(path)
+            raws.append(img)
+
+        for r in raws:
+            cv2.imshow('Title', r)
+            cv2.waitKey(0)
+            
+        cv2.destroyAllWindows()
+
 
     def __build_paths(self):
         file = self.__config['file']
@@ -96,7 +109,7 @@ class BallExtractor:
 
         # override defaults
         config = self.__default_config()
-        for flag, value in arg_dict.iteritems():
+        for flag, value in arg_dict.items():
             if flag == '-f' or flag == '--file':
                 config['file'] = value
             elif flag == '-d' or flag == '--directory':
