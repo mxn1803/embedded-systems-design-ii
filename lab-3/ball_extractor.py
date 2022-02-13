@@ -1,6 +1,7 @@
 """Extract the position of a ping-pong ball from an image.
 
-Uses OpenCV to perform a series of image processing tasks on a set of images in order to find the center of a ping-pong ball. 
+Uses OpenCV to perform a series of image processing tasks on a set of images in
+order to find the center of a ping-pong ball. 
 """
 
 __version__ = '1.0.0'
@@ -8,12 +9,16 @@ __author__ = 'Mike Nystoriak'
 __credits__ = ['Mike Nystoriak']
 
 import sys
-import os
 import cv2
 import numpy as np
 
+from path_accumulator import PathAccumulator
+
 class BallExtractor:
     """Identifies and extracts a white ping-pong ball from an image."""
+
+    def __init__(self):
+        self.__path_accumulator = PathAccumulator(['.jpg', '.jpeg'])
 
     def prompt(self):
         config, err = self.__parse_args(sys.argv[1:])
@@ -22,24 +27,23 @@ class BallExtractor:
             return
 
         paths = self.__build_paths(config)
-        return self.extract(paths)
-
+        _ = self.extract(paths)
 
     def extract(self, paths):
         """Runs extraction procedure."""
 
-        paths = self.__sanitize_file_paths(paths)
+        def load_raws(paths):
+            raws = []
+            for path in paths:
+                img = cv2.imread(path)
+                raws.append(img)
+            return raws
 
-        # load raw images from each path
-        raws = []
-        for path in paths:
-            img = cv2.imread(path)
-            raws.append(img)
-
-        for raw in raws:
+        def mask_raw(raw):
             blur = cv2.GaussianBlur(raw, (11, 11), 0)
             ycrcb = cv2.cvtColor(blur, cv2.COLOR_BGR2YCrCb)
 
+            # YCrCb bounds
             low = np.array([60, 0, 0])
             high = np.array([255, 144, 129])
 
@@ -47,7 +51,20 @@ class BallExtractor:
             masked = cv2.bitwise_and(raw, raw, mask=mask)
             masked = cv2.cvtColor(masked, cv2.COLOR_YCrCb2RGB)
             masked = cv2.cvtColor(masked, cv2.COLOR_RGB2GRAY)
+            return masked, mask
 
+        def draw_circles(circles, img):
+            if circles is not None:
+                circles = np.uint16(np.around(circles))
+                for i in circles[0,:]:
+                    cv2.circle(img, (i[0], i[1]), i[2], (0, 255, 0), 2)
+                    cv2.circle(img, (i[0], i[1]), 2, (0, 0, 255), 3)
+
+        paths = self.__path_accumulator.path_walk(paths)
+        raws = load_raws(paths)
+
+        for raw in raws:
+            masked, mask = mask_raw(raw)
             circles = cv2.HoughCircles(
                 image=masked,
                 method=cv2.HOUGH_GRADIENT,
@@ -58,64 +75,18 @@ class BallExtractor:
                 minRadius=30,
                 maxRadius=180
             )
-            if circles is not None:
-                circles = np.uint16(np.around(circles))
-                for i in circles[0,:]:
-                    cv2.circle(raw, (i[0], i[1]), i[2], (0, 255, 0), 2)
-                    cv2.circle(raw, (i[0], i[1]), 2, (0, 0, 255), 3)
-                    cv2.circle(mask, (i[0], i[1]), i[2], (0, 255, 0), 2)
-                    cv2.circle(mask, (i[0], i[1]), 2, (0, 0, 255), 3)
-
+            draw_circles(circles, raw)
+            draw_circles(circles, mask)
             cv2.imshow('Results', raw)
             cv2.imshow('Mask', mask)
             cv2.waitKey(0)
         cv2.destroyAllWindows()
+        return circles
 
     def __build_paths(self, config):
-        files = self.__sanitize_file_paths(config['files'])
-        directories = self.__sanitize_directory_paths(config['directories'])
-        paths = list(set(files + directories))
-        paths.sort()
-        return paths
-
-    def __check_extension(self, path):
-        _, ext = os.path.splitext(path)
-        ext = ext.upper()
-        return ext == '.JPG' or ext == '.JPEG'
-
-    def __normalize_prefix(self, path):
-        if path[0] != '/' and path[0:2] != './' and path[0] != '.':
-            return './' + path
-        else:
-            return path
-
-    def __sanitize_file_paths(self, paths):
-        cleared = []
-        for f in paths:
-            f = self.__normalize_prefix(f)
-            if not os.path.isfile(f):
-                print('*** WARN: `{}` does not exist!'
-                      ' Skipping... ***'.format(f))
-            elif not self.__check_extension(f):
-                print('*** WARN: `{}` is not a JPG file!'
-                      ' Skipping... ***'.format(f))
-            else:
-                cleared.append(f)
-        return cleared
-
-    def __sanitize_directory_paths(self, paths):
-        cleared = []
-        for d in paths:
-            d = self.__normalize_prefix(d)
-            if not os.path.isdir(d):
-                print('*** WARN: `{}` does not exist!'
-                      ' Skipping... ***'.format(f))
-            else:
-                files = os.listdir(d)
-                for i in range(len(files)):
-                    files[i] = os.path.join(d, files[i])
-                cleared = cleared + self.__sanitize_file_paths(files)
-        return cleared
+        files = config['files']
+        directories = config['directories']
+        return self.__path_accumulator.path_walk(files + directories)
 
     def __parse_args(self, args):
         # if no arguments provided, print usage
@@ -154,7 +125,8 @@ class BallExtractor:
             arg_dict[key].append(value)
 
         # override defaults
-        config = self.__default_config()
+        defaults = {'files': [],'directories': []}
+        config = defaults.copy()
         d_overriden = False
         for flag, values in arg_dict.iteritems():
             if flag == '-f' or flag == '--file':
@@ -171,9 +143,6 @@ class BallExtractor:
                     '*** Error: Invalid argument `{}`! ***'.format(flag)
                 )
         return config, None
-
-    def __default_config(self):
-        return {'files': [],'directories': []}
 
     def __usage(self):
         return ('Usage: python ball_extractor.py [options]'
