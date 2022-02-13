@@ -15,26 +15,25 @@ import numpy as np
 class BallExtractor:
     """Identifies and extracts a white ping-pong ball from an image."""
 
-    def __init__(self):
+    def prompt(self):
         config, err = self.__parse_args(sys.argv[1:])
-        if err: return self.__handle_err(err)
-        self.__config = config
+        if err:
+            print('\n{}\n\n{}\n').format(err, self.__usage())
+            return
 
-        paths, err = self.__build_paths()
-        if err: return self.__handle_err(err)
-        self.__paths = paths
+        paths = self.__build_paths(config)
+        return self.extract(paths)
 
-    def extract(self):
+
+    def extract(self, paths):
         """Runs extraction procedure."""
 
         # load raw images from each path
         raws = []
-        for path in self.__paths:
+        for path in paths:
             img = cv2.imread(path)
             raws.append(img)
-        self.__extraction_algorithm(raws)
 
-    def __extraction_algorithm(self, raws):
         for raw in raws:
             blur = cv2.GaussianBlur(raw, (11, 11), 0)
             ycrcb = cv2.cvtColor(blur, cv2.COLOR_BGR2YCrCb)
@@ -70,45 +69,51 @@ class BallExtractor:
             cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    def __build_paths(self):
-        file = self.__config['file']
-        if file: return self.__check_file_path(file)
-
-        directory = self.__config['directory']
-        return self.__check_directory_path(directory)
+    def __build_paths(self, config):
+        files = self.__check_file_paths(config['files'])
+        directories = self.__check_directory_paths(config['directories'])
+        paths = list(set(files + directories))
+        paths.sort()
+        return paths
 
     def __check_extension(self, path):
         _, ext = os.path.splitext(path)
         ext = ext.upper()
         return ext == '.JPG' or ext == '.JPEG'
 
-    def __check_file_path(self, file):
-        err = None
-        token = './{}' if file[0] != '/' else '{}'
-        file = token.format(file)
-        if not os.path.isfile(file):
-            err = '*** Error: `{}` does not exist! ***'.format(file)
-        if not self.__check_extension(file):
-            err = '*** Error: `{}` is not a JPG file! ***'.format(file)
+    def __normalize_prefix(self, path):
+        if path[0] != '/' and path[0:2] != './':
+            return './' + path
+        else:
+            return path
 
-        if err: return [], err
-        return [file], err
+    def __check_file_paths(self, paths):
+        cleared = []
+        for f in paths:
+            f = self.__normalize_prefix(f)
+            if not os.path.isfile(f):
+                print('*** WARN: `{}` does not exist!'
+                      ' Skipping... ***'.format(f))
+            elif not self.__check_extension(f):
+                print('*** WARN: `{}` is not a JPG file!'
+                      ' Skipping... ***'.format(f))
+            else:
+                cleared.append(f)
+        return cleared
 
-    def __check_directory_path(self, directory):
-        err = None
-        if not os.path.isdir(directory):
-            token = './{}/' if directory[0] != '/' else '{}/'
-            directory = token.format(directory)
-            err = '*** Error: `{}` does not exist! ***'.format(directory)
-
-        if err: return [], err
-
-        jpgs = []
-        for file in os.listdir(directory):
-            if self.__check_extension(os.path.join(directory, file)):
-                jpgs.append(os.path.join(directory, file))
-        jpgs.sort()
-        return jpgs, err
+    def __check_directory_paths(self, paths):
+        cleared = []
+        for d in paths:
+            d = self.__normalize_prefix(d)
+            if not os.path.isdir(d):
+                print('*** WARN: `{}` does not exist!'
+                      ' Skipping... ***'.format(f))
+            else:
+                files = os.listdir(d)
+                for i in range(len(files)):
+                    files[i] = os.path.join(d, files[i])
+                cleared = cleared + self.__check_file_paths(files)
+        return cleared
 
     def __parse_args(self, args):
         # see if `-h` or `--help` was invoked first
@@ -132,27 +137,36 @@ class BallExtractor:
                 None,
                 '*** Error: Invalid number of arguments! ***'
             )
-        arg_dict = {}
+
+        arg_dict = dict.fromkeys(flags)
         for i in range(len(flags)):
-            arg_dict[flags[i]] = values[i]
+            key = flags[i]
+            value = values[i]
+            if not arg_dict[key]:
+                arg_dict[key] = []
+            arg_dict[key].append(value)
 
         # override defaults
         config = self.__default_config()
-        for flag, value in arg_dict.iteritems():
+        d_overriden = False
+        for flag, values in arg_dict.iteritems():
             if flag == '-f' or flag == '--file':
-                config['file'] = value
+                config['files'] = config['files'] + values
             elif flag == '-d' or flag == '--directory':
-                config['directory'] = value
+                if not d_overriden:
+                    config['directories'] = values
+                    d_overriden = True
+                else:
+                    config['directories'] = config['directories'] + values
             else:
                 return (
                     None,
                     '*** Error: Invalid argument `{}`! ***'.format(flag)
                 )
-
         return config, None
 
     def __default_config(self):
-        return {'file': '','directory': '.'}
+        return {'files': [],'directories': ['.']}
 
     def __handle_err(self, err):
         print('\n{}\n\n{}\n').format(err, self.__usage())
@@ -188,7 +202,7 @@ class BallExtractor:
 
 def main():
     ball_extractor = BallExtractor()
-    ball_extractor.extract()
+    ball_extractor.prompt()
 
 if __name__ == '__main__':
     main()
