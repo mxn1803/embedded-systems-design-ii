@@ -28,6 +28,8 @@ class BallExtractor:
     def extract(self, paths):
         """Runs extraction procedure."""
 
+        paths = self.__sanitize_file_paths(paths)
+
         # load raw images from each path
         raws = []
         for path in paths:
@@ -70,8 +72,8 @@ class BallExtractor:
         cv2.destroyAllWindows()
 
     def __build_paths(self, config):
-        files = self.__check_file_paths(config['files'])
-        directories = self.__check_directory_paths(config['directories'])
+        files = self.__sanitize_file_paths(config['files'])
+        directories = self.__sanitize_directory_paths(config['directories'])
         paths = list(set(files + directories))
         paths.sort()
         return paths
@@ -82,12 +84,12 @@ class BallExtractor:
         return ext == '.JPG' or ext == '.JPEG'
 
     def __normalize_prefix(self, path):
-        if path[0] != '/' and path[0:2] != './':
+        if path[0] != '/' and path[0:2] != './' and path[0] != '.':
             return './' + path
         else:
             return path
 
-    def __check_file_paths(self, paths):
+    def __sanitize_file_paths(self, paths):
         cleared = []
         for f in paths:
             f = self.__normalize_prefix(f)
@@ -101,7 +103,7 @@ class BallExtractor:
                 cleared.append(f)
         return cleared
 
-    def __check_directory_paths(self, paths):
+    def __sanitize_directory_paths(self, paths):
         cleared = []
         for d in paths:
             d = self.__normalize_prefix(d)
@@ -112,10 +114,15 @@ class BallExtractor:
                 files = os.listdir(d)
                 for i in range(len(files)):
                     files[i] = os.path.join(d, files[i])
-                cleared = cleared + self.__check_file_paths(files)
+                cleared = cleared + self.__sanitize_file_paths(files)
         return cleared
 
     def __parse_args(self, args):
+        # if no arguments provided, print usage
+        if len(args) == 0:
+            print('\n{}\n'.format(self.__usage()))
+            exit(0)
+
         # see if `-h` or `--help` was invoked first
         for arg in args:
             if arg == '-h' or arg == '--help':
@@ -166,10 +173,7 @@ class BallExtractor:
         return config, None
 
     def __default_config(self):
-        return {'files': [],'directories': ['.']}
-
-    def __handle_err(self, err):
-        print('\n{}\n\n{}\n').format(err, self.__usage())
+        return {'files': [],'directories': []}
 
     def __usage(self):
         return ('Usage: python ball_extractor.py [options]'
