@@ -9,10 +9,11 @@ __author__ = 'Mike Nystoriak'
 __credits__ = ['Mike Nystoriak']
 
 import sys
+import os
 import cv2
 import numpy as np
 
-from path_accumulator import PathAccumulator
+from path import PathAccumulator
 
 class BallExtractor:
     """Identifies and extracts a white ping-pong ball from an image."""
