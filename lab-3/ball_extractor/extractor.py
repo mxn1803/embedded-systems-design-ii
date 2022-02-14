@@ -24,20 +24,20 @@ class BallExtractor:
         self.__config_parser = ConfigParser()
 
     def prompt(self):
-        config, err = self.__config_parser.parse(sys.argv[1:])
+        configuration, err = self.__config_parser.parse(sys.argv[1:])
         if err:
             print('\n{}\n\n{}\n').format(err, self.__config_parser.usage())
             return
 
-        paths = self.__build_paths(config)
-        _ = self.extract(paths)
+        paths = self.__build_paths(configuration)
+        _ = self.extract(paths, configuration['output'])
 
-    def extract(self, paths):
+    def extract(self, srcs, dst=None):
         """Runs extraction procedure."""
 
-        def load_raws(paths):
+        def load_raws(srcs):
             raws = []
-            for path in paths:
+            for path in srcs:
                 img = cv2.imread(path)
                 raws.append(img)
             return raws
@@ -63,12 +63,20 @@ class BallExtractor:
                     cv2.circle(img, (i[0], i[1]), i[2], (0, 255, 0), 2)
                     cv2.circle(img, (i[0], i[1]), 2, (0, 0, 255), 3)
 
-        paths = self.__path_accumulator.path_walk(paths)
+        paths = self.__path_accumulator.path_walk(srcs)
         raws = load_raws(paths)
         results, result_masks = [], []
 
-        for raw in raws:
-            masked, mask = mask_raw(raw)
+        if dst:
+            print dst
+            if os.path.isdir(dst):
+                for f in os.listdir(dst):
+                    os.remove(os.path.join(dst, f))
+            else:
+                os.makedirs(dst)
+
+        for i in range(len(raws)):
+            masked, mask = mask_raw(raws[i])
             circles = cv2.HoughCircles(
                 image=masked,
                 method=cv2.HOUGH_GRADIENT,
@@ -79,26 +87,27 @@ class BallExtractor:
                 minRadius=30,
                 maxRadius=180
             )
-            draw_circles(circles, raw)
+            draw_circles(circles, raws[i])
             draw_circles(circles, mask)
-            results.append(raw)
+            results.append(raws[i])
             result_masks.append(mask)
 
-            cv2.imshow('Image', raw)
-            cv2.imshow('Mask', mask)
-            cv2.waitKey(0)
-
-        # self.__save_results(config, raw, mask)
+            if not dst:
+                cv2.imshow('Image', raws[i])
+                cv2.imshow('Mask', mask)
+                cv2.waitKey(0)
+            else:
+                self.__save_image(paths[i], dst, raws[i], mask)
 
         cv2.destroyAllWindows()
         return circles
 
-    def __save_results(self, config, results, masks):
-        if not os.path.isdir(config['output']):
-            os.makedirs(os.path.join(config['output'], 'results'))
-            os.makedirs(os.path.join(config['output'], 'masks'))
-        for i in range(len(results)):
-            cv2.imwrite(config['output'])
+    def __save_image(self, src, dst, raw, mask):
+        [name, ext] = os.path.basename(src).split('.')
+        cv2.imwrite(os.path.join(dst, name + '.' + ext), raw)
+        cv2.imwrite(os.path.join(dst, name + '-mask.' + ext), mask)
+        print(src, os.path.join(dst, name + '.' + ext))
+        print(src, os.path.join(dst, name + '-mask.' + ext))
 
     def __build_paths(self, config):
         files = config['files']
