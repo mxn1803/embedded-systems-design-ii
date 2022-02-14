@@ -1,7 +1,7 @@
 """Extract the position of a ping-pong ball from an image.
 
 Uses OpenCV to perform a series of image processing tasks on a set of images in
-order to find the center of a ping-pong ball. 
+order to find the center of a ping-pong ball.
 """
 
 __version__ = '1.0.0'
@@ -20,20 +20,25 @@ class BallExtractor:
     """Identifies and extracts a white ping-pong ball from an image."""
 
     def __init__(self):
+        """Initializes a ball extractor."""
+
         self.__path_accumulator = PathAccumulator(['.jpg', '.jpeg'])
         self.__config_parser = ConfigParser()
 
-    def prompt(self):
-        configuration, err = self.__config_parser.parse(sys.argv[1:])
-        if err:
-            print('\n{}\n\n{}\n').format(err, self.__config_parser.usage())
-            return
-
-        paths = self.__build_paths(configuration)
-        _ = self.extract(paths, configuration['output'])
-
     def extract(self, srcs, dst='./out'):
-        """Runs extraction procedure."""
+        """Runs extraction procedure.
+            
+        Args:
+            srcs [str]: A list containing a series of filepaths to images that
+                        are staged for processing.
+            dst  str:   The output directory to house the results. Will be
+                        created if it does not currently exist. Default is
+                        './out'.
+
+        Returns:
+            [[float]]: A list of circles found by OpenCV's HoughCircle
+                       implementation.
+        """
 
         def load_raws(srcs):
             raws = []
@@ -59,9 +64,9 @@ class BallExtractor:
         def draw_circles(circles, img):
             if circles is not None:
                 circles = np.uint16(np.around(circles))
-                for i in circles[0,:]:
-                    cv2.circle(img, (i[0], i[1]), i[2], (0, 255, 0), 2)
-                    cv2.circle(img, (i[0], i[1]), 2, (0, 0, 255), 3)
+                for [(x, y, r)] in circles:
+                    cv2.circle(img, (x, y), r, (0, 255, 0), 2)
+                    cv2.circle(img, (x, y), 2, (0, 0, 255), 3)
 
         paths = self.__path_accumulator.path_walk(srcs)
         raws = load_raws(paths)
@@ -87,12 +92,23 @@ class BallExtractor:
             )
             draw_circles(circles, raws[i])
             draw_circles(circles, mask)
+
+            circles_list = circles.tolist()
             results.append(raws[i])
             result_masks.append(mask)
             self.__save_image(paths[i], dst, raws[i], mask)
+        return circles_list[0]
 
-        cv2.destroyAllWindows()
-        return circles
+    def prompt(self):
+        """Runs a small command line interface."""
+        
+        configuration, err = self.__config_parser.parse(sys.argv[1:])
+        if err:
+            print('\n{}\n\n{}\n').format(err, self.__config_parser.usage())
+            return
+
+        paths = self.__build_paths(configuration)
+        _ = self.extract(paths, configuration['output'])
 
     def __save_image(self, src, dst, raw, mask):
         [name, ext] = os.path.basename(src).split('.')

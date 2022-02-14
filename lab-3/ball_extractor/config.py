@@ -1,11 +1,28 @@
+"""Parses commandline arguments and configures a ball extractor."""
+
+__version__ = '1.0.0'
+__author__ = 'Mike Nystoriak'
+__credits__ = ['Mike Nystoriak']
+
 class ConfigParser:
+    """Describes a configuration parser."""
+    
     def parse(self, args):
+        """Parses arguments.
+
+        Args:
+            args [str]: A list of arguments derived from `sys.argv[1:]`.
+
+        Returns:
+            ({str: [str]}, str): A dictionary of configuration settings.
+        """
+
         self.__handle_help(args)
         arg_dict, err = self.__build_arg_dict(args)
         if err: return None, err
 
         # override defaults
-        defaults = {'files': [], 'directories': [], 'output': './results'}
+        defaults = {'files': [], 'directories': [], 'output': ['./results']}
         config = defaults.copy()
         directory_handled = False
         output_handled = False
@@ -32,6 +49,12 @@ class ConfigParser:
         return config, None
 
     def usage(self):
+        """Fetches the usage of a ball extractor.
+
+        Returns:
+            str: The usage.
+        """
+
         return ('Usage: python ball_extractor.py [options]'
                 '\n'
                 '\n    options: -f, --file      FILE         The path to a'
