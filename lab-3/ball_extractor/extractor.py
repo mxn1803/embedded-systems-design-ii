@@ -32,7 +32,7 @@ class BallExtractor:
         paths = self.__build_paths(configuration)
         _ = self.extract(paths, configuration['output'])
 
-    def extract(self, srcs, dst=None):
+    def extract(self, srcs, dst='./out'):
         """Runs extraction procedure."""
 
         def load_raws(srcs):
@@ -67,13 +67,11 @@ class BallExtractor:
         raws = load_raws(paths)
         results, result_masks = [], []
 
-        if dst:
-            print dst
-            if os.path.isdir(dst):
-                for f in os.listdir(dst):
-                    os.remove(os.path.join(dst, f))
-            else:
-                os.makedirs(dst)
+        if os.path.isdir(dst):
+            for f in os.listdir(dst):
+                os.remove(os.path.join(dst, f))
+        else:
+            os.makedirs(dst)
 
         for i in range(len(raws)):
             masked, mask = mask_raw(raws[i])
@@ -91,13 +89,7 @@ class BallExtractor:
             draw_circles(circles, mask)
             results.append(raws[i])
             result_masks.append(mask)
-
-            if not dst:
-                cv2.imshow('Image', raws[i])
-                cv2.imshow('Mask', mask)
-                cv2.waitKey(0)
-            else:
-                self.__save_image(paths[i], dst, raws[i], mask)
+            self.__save_image(paths[i], dst, raws[i], mask)
 
         cv2.destroyAllWindows()
         return circles
@@ -106,8 +98,8 @@ class BallExtractor:
         [name, ext] = os.path.basename(src).split('.')
         cv2.imwrite(os.path.join(dst, name + '.' + ext), raw)
         cv2.imwrite(os.path.join(dst, name + '-mask.' + ext), mask)
-        print(src, os.path.join(dst, name + '.' + ext))
-        print(src, os.path.join(dst, name + '-mask.' + ext))
+        print('Result: ' + os.path.join(dst, name + '.' + ext))
+        print('Mask  : ' + os.path.join(dst, name + '-mask.' + ext))
 
     def __build_paths(self, config):
         files = config['files']

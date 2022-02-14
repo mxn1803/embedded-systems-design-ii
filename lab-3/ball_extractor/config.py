@@ -8,7 +8,7 @@ class ConfigParser:
         defaults = {'files': [], 'directories': [], 'output': './results'}
         config = defaults.copy()
         directory_handled = False
-        schema_handled = False
+        output_handled = False
 
         for flag, values in arg_dict.iteritems():
             if flag == '-f' or flag == '--file':
@@ -21,7 +21,8 @@ class ConfigParser:
                     config['directories'] = config['directories'] + values
             elif flag == '-o' or flag == '--output':
                 if not output_handled:
-                    config['output'] = values
+                    config['output'] = values[0]
+                    output_handled = True
                 else:
                     err = '*** Error: Invalid number of arguments! ***'
                     return None, err
