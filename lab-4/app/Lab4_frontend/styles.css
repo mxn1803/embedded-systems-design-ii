@@ -1,0 +1,31 @@
+/*ESDII Lab 4 - Blink CSS*/
+*{
+	margin: 0;
+	padding: 0;
+}
+
+.controller{
+	float: left;
+
+	background-color: white;
+	border: 4px solid black;
+	border-radius: 15px 15px 15px 15px;
+	text-align: center;
+	width: 200px;
+}
+
+main{
+	align-items: center;
+	font-family: sans-serif;
+	font-weight: bold;
+
+	background-color: green;
+	width: 100vw;
+	height: 100vh;
+	text-align: center;
+}
+
+#freq{
+	font-size: 175px;
+	text-align: center;
+}
