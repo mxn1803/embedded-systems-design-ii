@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lab 4 | Virtual LED</title>
+</head>
+<body>
+    Client 1:
+    <button onclick="sendMessage()">Send Message!</button>
+    <script type="text/javascript">
+        // call me when
+        const sendMessage = () => {
+            socket.send(Math.floor(Math.random() * 1_000_000) % 11)
+        }
+
+        // create websocket connection
+        const socket = new WebSocket('ws://192.168.1.210:3000')
+
+        // connection is open
+        socket.addEventListener('open', evt => {
+            console.log('Connected to webserver!')
+        })
+
+        // listen for incoming messages
+        socket.addEventListener('message', evt => {
+            console.log(`Server: ${evt.data}`)
+        })
+
+
+    </script>
+</body>
+</html>

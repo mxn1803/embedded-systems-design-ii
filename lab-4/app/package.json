@@ -1,0 +1,17 @@
+{
+  "name": "lab-4",
+  "version": "1.0.0",
+  "description": "A simple web application that acts as a virtual LED.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "express": "^4.17.3",
+    "ws": "^8.5.0"
+  }
+}
