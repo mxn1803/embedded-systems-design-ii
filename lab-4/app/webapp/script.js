@@ -2,15 +2,14 @@ let count = 5;
 update(count);
 
 window.addEventListener('keydown', function(event) {
-  console.log(event.key);
-  change_freq(event.key);
-  event.preventDefault();
+    change_freq(event.key);
+    event.preventDefault();
 }, true);
 
 
 
 // create websocket connection
-const socket = new WebSocket('3000')
+const socket = new WebSocket('ws://localhost:3000')
 
 // connection is open
 socket.addEventListener('open', evt => {
@@ -28,18 +27,19 @@ function change_freq(name){
   if (name == 'a') {
     if (count == 0) {count = 0;}
     else {count--;}
-  update(count);
+    update(count);
+    socket.send(count)
   }
   else if (name =='d'){
     if (count == 10){count = 10;}
     else {count++;}
     update(count);
+    socket.send(count)
   }
 }
 
 // Update display
 function update(frequency){
-  console.log(document.querySelector('h1'))
   document.getElementById("freq").innerHTML = frequency + " Hz";
   color(frequency);
 }

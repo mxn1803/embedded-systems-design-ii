@@ -1,58 +1,50 @@
-const { exec } = require('child_process')
-const dotenv = require('dotenv').config()
-
-const readMemory = addr => {
-    return new Promise((resolve, reject) => {
-        // need root password to use `/fusion2/rwmem.elf`
-        const command = `echo '${process.env.PASSWD}' | sudo -S /fusion2/rwmem.elf ${addr}`
-        exec(command, (err, stdout, stderr) => {
-            if (err) reject(err)
-            resolve(stdout.split(' = ')[1].slice(0, -1))
-        })
-    })
-}
-
-const writeMemory = (addr, value) => {
-    return new Promise((resolve, reject) => {
-        const command = `echo '${process.env.PASSWD}' | sudo -S /fusion2/rwmem.elf ${addr} ${value}`
-        exec(command, (err, stdout, stderr) => {
-            if (err) reject(err)
-            resolve()
-        })
-    })
-}
-
-/**************************************************************************/
-
 const http = require('http')
+const net = require('net')
 const express = require('express')
 const WebSocket = require('ws')
 
 const app = express()
 const server = http.createServer(app)
 const wss = new WebSocket.Server({ server })
+const snifferConnection = net.createConnection({
+    host: '127.0.0.1',
+    port: 30001
+})
 
 app.use(express.static('webapp'))
 
 // change me according to James
-const READ_ADDRESS = '0x20000000'
-const WRITE_ADDRESS = '0x20000000'
+// const READ_ADDRESS = '0xFF'
+// const WRITE_ADDRESS = '0xFF'
 
 const hzToCounter = hz => hz * 50_000_000
+const dataBufferToCounter = buf => {
+    return (buf[3] << 24) + (buf[2] << 16) + (buf[1] << 8) + buf[0]
+}
 
 wss.on('connection', ws => {
     // verify connection
     console.log('A new connection has been made.')
     ws.send('Now connected to Lab 4, Virtual LED...')
 
-    // sniff register and send to client (100ms is about the limit for now)
-    setInterval(async () => ws.send(await readMemory(READ_ADDRESS)), 100)
+    snifferConnection.on('data', data => {
+        // chunk into single readings
+        chunk = Buffer.alloc(4)
+        for (const [idx, byte] of data.entries()) {
+            chunk[idx % 4] = byte
+            if (idx % 4 === 3) {
+                value = dataBufferToCounter(chunk)
+                ws.send(value)
+                chunk.fill(0)
+            }
+        }
+    })
 
-    // receive messages from client
-    ws.on('message', async msg => {
-        counter = hzToCounter(parseInt(msg))
-        await writeMemory(WRITE_ADDRESS, counter)
-        // console.log(counter, await readMemory(READ_ADDRESS))
+    ws.on('message', data => {
+        data = hzToCounter(parseInt(data.toString()))
+
+        // write me to memory
+        console.log(data)
     })
 })
 
