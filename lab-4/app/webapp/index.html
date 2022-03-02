@@ -1,33 +1,20 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Lab 4 | Virtual LED</title>
-</head>
-<body>
-    Client 1:
-    <button onclick="sendMessage()">Send Message!</button>
-    <script type="text/javascript">
-        // call me when
-        const sendMessage = () => {
-            socket.send(Math.floor(Math.random() * 1_000_000) % 11)
-        }
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>ESDII - Blink</title>
+        <link rel="stylesheet" href="styles.css">
+        <script src="script.js" defer></script>
+    </head>
 
-        // create websocket connection
-        const socket = new WebSocket('ws://192.168.1.210:3000')
-
-        // connection is open
-        socket.addEventListener('open', evt => {
-            console.log('Connected to webserver!')
-        })
-
-        // listen for incoming messages
-        socket.addEventListener('message', evt => {
-            console.log(`Server: ${evt.data}`)
-        })
-
-
-    </script>
-</body>
+    <body>
+        <main>
+            <div class="controller">
+                <h1>Controls</h1>
+                <p>A - Decrement Freq</p>
+                <p>D - Increment Freq</p>
+            </div>
+            <h1 id="freq">0</h1>
+        </main>
+    </body>
 </html>
