@@ -23,7 +23,6 @@ def sniff(mem_address):
                     for i in range(0xFFFF):
                         value = os.pread(fd, 4, mem_address)
                         connection.sendall(value)
-                        print(value)
                         time.sleep(0.01)
             except ConnectionResetError:
                 print('Connection reset by peer.')
