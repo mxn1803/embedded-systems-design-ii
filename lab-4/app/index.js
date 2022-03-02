@@ -13,10 +13,6 @@ const snifferConnection = net.createConnection({
 
 app.use(express.static('webapp'))
 
-// change me according to James
-// const READ_ADDRESS = '0xFF'
-// const WRITE_ADDRESS = '0xFF'
-
 const hzToCounter = hz => hz * 50_000_000
 const dataBufferToCounter = buf => {
     return (buf[3] << 24) + (buf[2] << 16) + (buf[1] << 8) + buf[0]
