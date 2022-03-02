@@ -2,6 +2,7 @@ const http = require('http')
 const net = require('net')
 const express = require('express')
 const WebSocket = require('ws')
+const dotenv = require('dotenv').config()
 
 const app = express()
 const server = http.createServer(app)
