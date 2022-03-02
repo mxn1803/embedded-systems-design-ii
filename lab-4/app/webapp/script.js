@@ -19,6 +19,18 @@ socket.addEventListener('open', evt => {
 // listen for incoming messages
 socket.addEventListener('message', evt => {
     console.log(`Server: ${evt.data}`)
+
+    /*******************************/
+
+
+      // ADD STUFF HERE...
+
+      // if 0, dim screen
+      // else bright screen
+
+
+    /*******************************/
+
 })
 
 
