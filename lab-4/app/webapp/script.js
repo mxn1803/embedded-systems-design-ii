@@ -1,61 +1,66 @@
-let count = 5;
-update(count);
 
 // listen for keyboard input
 window.addEventListener('keydown', function(event) {
-    change_freq(event.key);
-    event.preventDefault();
+  updateFrequencyElement(event.key);
+  event.preventDefault();
 }, true);
 
+// frequency display
+let frequency = 5
+const frequencyElement = document.getElementById("freq")
+frequencyElement.innerText = `${frequency} Hz`
+frequencyElement.style.color = 'white'
+
+const updateFrequencyElement = key => {
+  key = key.toUpperCase()
+  const canBeIncreased = key === 'A' && frequency < 10
+  const canBeDecreased = key === 'D' && frequency > 1
+
+  if (canBeIncreased) {
+    frequencyElement.innerText = `${++frequency} Hz`
+  } else if (canBeDecreased) {
+    frequencyElement.innerText = `${--frequency} Hz`
+  }
+  socket.send(frequency)
+}
+
+// LED state
+const ledElement = document.querySelector('main')
+ledElement.style.backgroundColor = 'green'
+
+const turnOn = () => ledElement.style.backgroundColor = 'green'
+const turnOff = () => ledElement.style.backgroundColor = 'black'
+
 // create websocket connection
-const socket = new WebSocket('ws://localhost:3000')
+const socket = new WebSocket('ws://192.168.1.210:3000')
 
 // connection is open
 socket.addEventListener('open', evt => {
     console.log('Connected to webserver!')
+    socket.send(frequency)
 })
 
 // listen for incoming messages
 socket.addEventListener('message', evt => {
-    console.log(`Server: ${evt.data}`)
-    count = Math.round(evt.data)
-    update(evt.data)
+    parseInt(evt.data) ? turnOn() : turnOff()
 })
 
+// const contrast = 8
+// const darken = color => {
+//   const newColor = color.slice(1).split('').map(x => {
+//     x = parseInt(x, 16)
+//     x = x < contrast ? 0 : x - contrast
+//     return x.toString(16)
+//   }).join('')
+//   console.log(color, newColor)
 
-// Change Frequency w keys
-function change_freq(key){
-  if (key == 'a') {
-    if (count == 0) {count = 0;}
-    else {count--;}
-  }
-  else if (key =='d'){
-    if (count == 10){count = 10;}
-    else {count++;}
-  }
-  update(count);
-  socket.send(count);
-}
+//   return '#' + newColor
+// }
 
-// Update frequency heading display
-function update(frequency){
-  document.getElementById("freq").innerHTML = frequency + " Hz";
-  color(frequency);
-}
-
-
-// Update Page (LED) color
-function color(frequency){
-  background=document.querySelector("main")
-  if (frequency == 0){
-    background.style.backgroundColor = 'black';
-    document.getElementById("freq").style.color = 'white';
-
-
-    //Is there a way to actually dim screen or did you just mean turn it black?
-  }
-  else {
-    background.style.backgroundColor = "#60F360";
-    document.getElementById("freq").style.color = 'black';
-  }
-}
+// const brighten = color => {
+//   return '#' + color.slice(1).split('').map(x => {
+//     x = parseInt(x, 16)
+//     x = x > 15 - contrast ? 15 : x + contrast
+//     return x.toString(16)
+//   }).join('')
+// }

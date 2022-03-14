@@ -14,7 +14,9 @@ const snifferConnection = net.createConnection({
 
 app.use(express.static('webapp'))
 
-const hzToCounter = hz => hz * 50_000_000
+const hzToCounter = hz => {
+    return hz === 0 ? 0xFFFFFFFF : Math.round(50000000 / hz / 2)
+}
 const dataBufferToCounter = buf => {
     return (buf[3] << 24) + (buf[2] << 16) + (buf[1] << 8) + buf[0]
 }
@@ -38,10 +40,9 @@ wss.on('connection', ws => {
     })
 
     ws.on('message', data => {
-        data = hzToCounter(parseInt(data.toString()))
-
-        // write me to memory
-        console.log(data)
+        data = parseInt(data.toString())
+        data = hzToCounter(data)
+        snifferConnection.write(data.toString())
     })
 })
 
